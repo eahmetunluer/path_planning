@@ -1,5 +1,12 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
+#include "visualization_msgs/Marker.h"
+#include "nav_msgs/Path.h"
+
+#include "ompl/geometric/PathGeometric.h"
+#include "ompl/base/Path.h"
+#include "ompl/base/ProblemDefinition.h"
+#include "ompl/geometric/PathGeometric.h"
 #include <sstream>
 #include "ompl/base/SpaceInformation.h"
 #include "ompl/base/OptimizationObjective.h"
@@ -10,6 +17,15 @@
 #include "ompl/config.h"
 #include <iostream>
 #include <utility>
+
+#include "ompl/geometric/PathGeometric.h"
+#include "ompl/base/samplers/UniformValidStateSampler.h"
+#include "ompl/base/OptimizationObjective.h"
+#include "ompl/base/ScopedState.h"
+#include <algorithm>
+#include <cmath>
+#include <limits>
+#include <boost/math/constants/constants.hpp>
 namespace ob = ompl::base;
 namespace og = ompl::geometric;
 
@@ -61,25 +77,59 @@ std::pair<ob::ProblemDefinitionPtr, ob::SpaceInformationPtr> construct(double st
     return std::make_pair(pdef, si);
 }
 
+
+
+
+bool execute(path_planner::input_params::Request  &req,
+         path_planner::input_params::Response &res)
+{
+  return true;
+}
+
+
+
 int main(int argc, char **argv)
 {
-    double computation_time = 4.0;
     ros::init(argc, argv, "path_planner");
     ros::NodeHandle nh;
+    double computation_time = 1.0;
+    visualization_msgs::Marker obstacles[10];
+    for (int i = 0; i < 10; i++)
+    {
+        obstacles[i].header.frame_id = "frame_obstacle" + i;
+        obstacles[i].header.stamp = ros::Time();
+        obstacles[i].ns = "obstacle";
+        obstacles[i].id = i;
+        obstacles[i].type = visualization_msgs::Marker::SPHERE;
+        obstacles[i].action = visualization_msgs::Marker::ADD;
+        obstacles[i].pose.position.x = 1;
+        obstacles[i].pose.position.y = 1;
+        obstacles[i].pose.position.z = 0;
+        obstacles[i].pose.orientation.x = 0.0;
+        obstacles[i].pose.orientation.y = 0.0;
+        obstacles[i].pose.orientation.z = 0.0;
+        obstacles[i].pose.orientation.w = 1.0;
+        obstacles[i].scale.x = 1;
+        obstacles[i].scale.y = 0.1;
+        obstacles[i].scale.z = 0.1;
+        obstacles[i].color.a = 1.0;
+        obstacles[i].color.r = 0.0;
+        obstacles[i].color.g = 1.0;
+        obstacles[i].color.b = 0.0;
+    }
 
-    ros::Publisher chatter_pub = nh.advertise<std_msgs::String>("chatter", 1000);
+    ros::Publisher obstacles_pub = nh.advertise<visualization_msgs::Marker>("Obstacles_Publisher", 1000);
+    ros::Publisher path_pub = nh.advertise<nav_msgs::Path>("Path_Publisher", 1000);
+    //ros::Rate loop_rate(10);
+    ros::ServiceServer service = n.advertiseService("input_params", execute);
+    ROS_INFO("path_planner node has been started.");
+    ros::spin();
 
-    ros::Rate loop_rate(10);
 
-    int count = 0;
-    std::cout << "OMPL version: " << OMPL_VERSION << std::endl;
-
-    std::cout << std::endl
-              << std::endl;
 
     auto pdef = construct(0.0, 0.0, 50.0, 50.0);
-    og::RRTstar* rrt = new og::RRTstar(pdef.second);
-    rrt->setRange(1.0);
+    og::RRTstar *rrt = new og::RRTstar(pdef.second);
+    rrt->setRange(5.0);
 
     ob::PlannerPtr optimizingPlanner(rrt);
 
@@ -94,15 +144,27 @@ int main(int argc, char **argv)
             << " found a solution of length "
             << pdef.first->getSolutionPath()->length()
             << " with an optimization objective value of "
-            << pdef.first->getSolutionPath()->cost(pdef.first->getOptimizationObjective()) << std::endl;
-        // If a filename was specified, output the path as a matrix to
-        // that file for visualization
-        //if (!outputFile.empty())
-        //{
-        //    std::ofstream outFile(outputFile.c_str());
-        //    std::static_pointer_cast<og::PathGeometric>(pdef->getSolutionPath())->printAsMatrix(outFile);
-        //    outFile.close();
-        //}
+            << pdef.first->getSolutionPath()->cost(pdef.first->getOptimizationObjective()) << std::endl
+            << pdef.first->getSolutionCount() << std::endl;
+        ob::PlannerSolution *foundPaths = new ob::PlannerSolution(pdef.first->getSolutionPath());
+
+        pdef.first->getSolutionPath().get()->print(std::cout);
+        og::PathGeometric path(dynamic_cast<const og::PathGeometric &>(*pdef.first->getSolutionPath()));
+        const std::vector<ob::State *> &states = path.getStates();
+        ob::State *state;
+        nav_msgs::Path nav_path;
+        geometry_msgs::PoseStamped pose;
+        for (size_t i = 0; i < states.size(); ++i)
+        {
+            state = states[i]->as<ob::State>();
+            //nav_path.poses
+            double x, y;
+            pose.pose.position.x = state->as<ob::RealVectorStateSpace::StateType>()->values[0];
+            pose.pose.position.y = state->as<ob::RealVectorStateSpace::StateType>()->values[1];
+            nav_path.poses.push_back(pose);
+            //std::cout << x << " " << y << std::endl;
+        }
+        path_pub.publish(nav_path);
     }
     else
         std::cout << "No solution found." << std::endl;
