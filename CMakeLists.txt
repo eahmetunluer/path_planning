@@ -2,12 +2,12 @@ cmake_minimum_required(VERSION 3.0.2)
 project(path_planning)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
+find_package(catkin REQUIRED
   roscpp
   rospy
   std_msgs
@@ -109,13 +109,12 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(include ${catkin_INCLUDE_DIRS})
+include_directories(include ${catkin_INCLUDE_DIRS} ${OMPL_INCLUDE_DIRS})
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/path_planning.cpp
 # )
-
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
@@ -137,7 +136,7 @@ add_executable(${PROJECT_NAME}_node src/path_planner.cpp)
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES} ${OMPL_LIBRARIES})
 
 #############
 ## Install ##
