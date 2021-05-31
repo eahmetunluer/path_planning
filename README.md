@@ -20,7 +20,7 @@ After starting the node:
 ```
 rosservice call /input_params -- start_x start_y end_x end_y
 ```
-Note that the type of the service parameters are 
+Note that the type of the service parameters are double
 
 Dynamic Reconfigure Parameters
 - Number_of_Obstacles
