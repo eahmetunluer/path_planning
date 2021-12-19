@@ -3,20 +3,26 @@
 A Path planning and visualization tool based on ROS.
 Tested on Ubuntu 20.04 and ROS Noetic
 
-Currently supported algorithms:
+## Currently supported algorithms:
 - RRT*
 
-Dependencies
+## Dependencies
 - OMPL
 - Dynamic Reconfigure
 
-A static tf publisher for simplicity
+## Usage
+1. A static tf publisher for simplicity
 ```
 rosrun tf static_transform_publisher 0.0 0.0 0.0 0.0 0.0 0.0 1.0 base_link map 1000
 ```
-After starting the node:
-- Use rqt to configure dynamic parameters
-- Use the following service
+
+2. Starting the node
+```
+rosrun path_planning path_planning_node
+```
+3. Use **rqt** to configure dynamic parameters
+
+4. Use the following service
 ```
 rosservice call /input_params -- start_x start_y end_x end_y
 ```
